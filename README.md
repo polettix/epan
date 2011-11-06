@@ -6,6 +6,16 @@ App::EPAN - Exclusive Perl Archive Nook
 SYNOPSIS
 ========
 
+    # collects all what is needed to install Dancer into subdir 'epan'
+    shell$ epan create Dancer
+
+    # regenerated index in ./modules/02packages.details.txt.gz, assuming
+    # to be in root directory of CPAN tree
+    shell$ epan index
+
+    # prints index on standard output, works on /path/to/minicpan
+    shell$ epan index -o - /path/to/minicpan
+
 
 ALL THE REST
 ============

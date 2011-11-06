@@ -33,19 +33,78 @@ Ask the version number to the script itself, calling:
 
    epan [--usage] [--help] [--man] [--version]
 
-   epan [--output|-o filename] [dirname]
+   epan create [-t|--target dirname] Module1 [Module2...]
+
+   epan update [-t|--target dirname] Module1 [Module2...]
+
+   epan index [-o|--output filename] [directory]
+
 
 =head1 EXAMPLES
 
+   # collects all what's needed to install Dancer somewhere
+   shell$ epan create -t dancer-stuff Dancer
+
    # regenerated index in ./modules/02packages.details.txt.gz, assuming
    # to be in root directory of CPAN tree
-   shell$ epan
+   shell$ epan index
 
    # prints index on standard output, works on /path/to/minicpan
-   shell$ epan -o - /path/to/minicpan
+   shell$ epan index -o - /path/to/minicpan
 
 
 =head1 DESCRIPTION
+
+This program helps you creating and managing an EPAN - a version of the
+CPAN that is trimmed down to your needs for installing specific stuff.
+
+To start with an example, suppose you have to install Dancer and a couple
+of its plugins in a machine that - for good reasons - is not connected
+to the Internet. It's easy to get the distribution files for Dancer and
+the plugins... but what about the dependencies? It can easily become a
+nightmare, forcing you to go back and forth with new modules as soon as
+you discover the need to install them.
+
+Thanks to L<cpanm>, this is quite easier these days: it can actually do
+what's needed with a single command:
+
+   # on the machine connected to the Internet or to a minicpan
+   $ cpanm -L xxx --scandeps --save-dists dists \
+        Dancer Dancer::Plugin::FlashNote ...
+
+which places all the modules in subdirectory C<dists> (thanks to option
+C<--save-dists>) with an arrangement similar to what you would expect from
+a CPAN mirror.
+
+On the target machine, you still have to make some work - e.g. you should
+collect the output from the invocation of cpanm above to figure out the
+order to use for installing the distribution files. Additionally, the
+directory structure that is generated lacks a proper index file (located
+in F<modules/02package.details.txt.gz>) so it would be difficult to use
+the normal toolchain.
+
+
+L<epan> aims at
+filling up the last mile to get the job done, providing you with a
+subdirectory that is ready for deployment, with all the bits in place to
+push automation as much as possible. So you can do this:
+
+   # on the machine connected to the Internet or to a minicpan
+   $ epan create Dancer Dancer::Plugin::FlashNote ...
+   $ tar cvzf epan.tar.gz epan
+
+transfer C<dists.tar.gz> to the target machine and...
+
+   # on the target machine
+   $ tar xvzf epan.tar.gz
+   $ cd epan
+   $ ./install.sh
+
+optionally providing an installation target directory:
+
+   $ ./install.sh /path/to/local/perl
+
+=head2 C<index>
 
 This program regenerates the index in a tree that is (mostly) compliant
 with how CPAN is organized (which is what most tools expect). In particular,
