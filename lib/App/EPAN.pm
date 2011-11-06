@@ -17,6 +17,8 @@ use Compress::Zlib   ();
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 use Moo;
 use IPC::Run ();
+use File::Copy ();
+use File::Which qw< which >;
 
 has configuration => (
    is        => 'rw',
@@ -229,7 +231,30 @@ sub action_update {
 
    my $modlist = $self->modlist_for($out);
    $self->save($target->file('modlist.txt'), $modlist);
-   
+
+   $self->save($target->file('install.sh'), <<'END_OF_INSTALL');
+#!/bin/bash
+bindir=$(dirname "$0")
+realbindir=$(readlink -f "$bindir")
+
+target=$1
+if [ -n "$target" ]; then
+   "$bindir/cpanm" --mirror "file://$realbindir" --mirror-only -L "$target" \
+      $(<"$realbindir/modlist.txt")
+else
+   "$bindir/cpanm" --mirror "file://$realbindir" --mirror-only \
+      $(<"$realbindir/modlist.txt")
+fi
+END_OF_INSTALL
+
+   if (my $cpanm = which('cpanm')) {
+      File::Copy::copy($cpanm, $target->file('cpanm')->stringify());
+   }
+
+   for my $f (qw< install.sh cpanm >) {
+      my $file = $target->file($f);
+      chmod 0777 &~ umask(), $file->stringify();
+   }
 }
 
 sub modlist_for {
