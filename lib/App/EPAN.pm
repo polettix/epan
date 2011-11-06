@@ -58,6 +58,7 @@ sub get_options {
       \%config,
       qw(
         output|o=s
+        target|t=s
         usage! help! man! version!
         )
    ) or pod2usage(-verbose => 99, -sections => 'USAGE');
@@ -147,35 +148,50 @@ Written-By:   mcpan-reindex $VERSION
 Line-Count:   ${ \ scalar @index }
 Last-Updated: ${ \ scalar localtime() }
 END_OF_HEADER
-   $self->last_index({header => $header, index => \@index});
    return join "\n", $header, @index, '';
 } ## end sub index_for
 
-sub index_body_for {
-   my ($self, $path, $idpath) = @_;
-
-   my @retval;
-   if (-d $path) {    # directory...
-      my $basedir = dir($path);
-      $idpath = $basedir->subdir(qw< authors id >);
-      for my $path (File::Find::Rule->file()->in($idpath->stringify())) {
-         INFO "indexing $path";
-         push @retval, $self->index_body_for($path, $idpath);
-      }
-      @retval = sort @retval;
-   } ## end if (-d $path)
-   else {             # it's a file...
+sub collect_index_for {
+   my ($self, $path) = @_;
+   $path = dir($path);
+   my $idpath = $path->subdir(qw< authors id >);
+   my %data_for;
+   for my $file (File::Find::Rule->file()->in($idpath->stringify())) {
+      INFO "indexing $file";
       my $index_path =
-        file($path)->relative($idpath)->as_foreign('Unix')->stringify();
-      my $dm = Dist::Metadata->new(file => $path);
+         file($file)->relative($idpath)->as_foreign('Unix')->stringify();
+      my $dm = Dist::Metadata->new(file => $file);
       my $version_for = $dm->package_versions();
-      for my $module (sort keys %$version_for) {
-         my $version = $version_for->{$module} || 'undef';
-         my $fw = 38 - length $version;
-         $fw = length $module if $fw < length $module;
-         push @retval, sprintf "%-${fw}s %s  %s", $module, $version,
-           $index_path;
-      } ## end for my $module (sort keys...
+      while (my ($module, $version) = each %$version_for) {
+         $data_for{module}{$module} = {
+            version => $version,
+            distro  => $index_path,
+         };
+      }
+      $data_for{distro}{$index_path} = $version_for;
+      (my $bare_index_path = $index_path) =~
+         s{^(.)/\1./}{}mxs;
+      $data_for{bare_distro}{$bare_index_path} = $version_for;
+   }
+   $self->last_index(\%data_for);
+   return %data_for if wantarray();
+   return \%data_for;
+}
+
+sub index_body_for {
+   my ($self, $path) = @_;
+
+   my $data_for = $self->collect_index_for($path);
+   my $module_data_for = $data_for->{module};
+   my @retval;
+   for my $module (sort keys %{$module_data_for}) {
+      my $md = $module_data_for->{$module};
+      my $version = $md->{version} || 'undef';
+      my $index_path = $md->{distro};
+      my $fw = 38 - length $version;
+      $fw = length $module if $fw < length $module;
+      push @retval, sprintf "%-${fw}s %s  %s", $module, $version,
+         $index_path;
    } ## end else [ if (-d $path)
    return @retval if wantarray();
    return \@retval;
@@ -218,18 +234,10 @@ sub action_update {
 
 sub modlist_for {
    my ($self, $list) = @_;
-   my @list = my @order = split /\n/, $list;
-   my %module_for;
-   for my $line (@{$self->last_index()->{index}}) {
-      last unless @list;
-      for my $i (0 .. $#list) {
-         next unless $line =~ m{$list[$i]$};
-         ($module_for{$list[$i]} = $line) =~ s{\s.*}{}mxs;
-         splice @list, $i, 1;
-         last;
-      }
-   }
-   return join "\n", @module_for{@order}, '';
+   my @list = split /\n/, $list;
+   my $data_for = $self->last_index()->{bare_distro};
+   my @retval = map { (sort keys %{$data_for->{$_}})[0] } @list;
+   return join "\n", @retval, '';
 }
 
 
