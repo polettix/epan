@@ -59,7 +59,9 @@ sub get_options {
    GetOptions(
       \%config,
       qw(
-        output|o=s
+        mailrc|m|1=s
+        output|packages-details|o|2=s
+        modlist|modlist-data|l|3=s
         target|t=s
         usage! help! man! version!
         )
@@ -96,19 +98,77 @@ sub action_index {
    return $self->do_index($basedir);
 }
 
+sub _save {
+   my ($self, $name, $contents, $config_key, $output) = @_;
+
+   if (defined(my $confout = $self->config($config_key))) {
+      $output = ! length($confout) ? undef
+               :   $confout eq '-' ? \*STDOUT
+               :                     file($confout);
+   }
+   if (defined $output) {
+      INFO "saving output to $output";
+      $self->save($output, scalar(ref($contents) ? $contents->() : $contents));
+   }
+   else {
+      INFO "empty filename for $name file, skipping";
+   }
+}
+
 sub do_index {
    my ($self, $basedir) = @_;
 
-   INFO "getting contributions for regenerated index...";
-   my $index_contents = $self->index_for($basedir);
+   $self->_save(
+      '01mailrc', # name
+      '',
+      'mailrc',             # configuration key to look output file
+      $basedir->file(qw< authors 01mailrc.txt.gz >) # default
+   );
 
-   my $output = $basedir->file(qw< modules 02packages.details.txt.gz >);
-   if (defined(my $confout = $self->config('output'))) {
-      $output = $confout eq '-' ? \*STDOUT : file($confout);
-   }
+   $self->_save(
+      '02packages.details', # name
+      sub {                 # where to get data from. Call is avoided if
+                            # no file on output
+         INFO "getting contributions for regenerated index...";
+         $self->index_for($basedir);
+      },
+      'output',             # configuration key to look output file
+      $basedir->file(qw< modules 02packages.details.txt.gz >) # default
+   );
 
-   INFO "saving output to $output";
-   $self->save($output, $index_contents);
+   $self->_save(
+      '03modlist.data', # name
+      <<'END_OF_03_MODLIST_DATA',
+File:        03modlist.data
+Description: These are the data that are published in the module
+        list, but they may be more recent than the latest posted
+        modulelist. Over time we'll make sure that these data
+        can be used to print the whole part two of the
+        modulelist. Currently this is not the case.
+Modcount:    0
+Written-By:  PAUSE version 1.005
+Date:        Sun, 28 Jul 2013 07:41:15 GMT
+
+package CPAN::Modulelist;
+# Usage: print Data::Dumper->new([CPAN::Modulelist->data])->Dump or similar
+# cannot 'use strict', because we normally run under Safe
+# use strict;
+sub data {
+my $result = {};
+my $primary = "modid";
+for (@$CPAN::Modulelist::data){
+my %hash;
+@hash{@$CPAN::Modulelist::cols} = @$_;
+$result->{$hash{$primary}} = \%hash;
+}
+$result;
+}
+$CPAN::Modulelist::cols = [ ];
+$CPAN::Modulelist::data = [ ];
+END_OF_03_MODLIST_DATA
+      'modlist',             # configuration key to look output file
+      $basedir->file(qw< modules 03modlist.data.gz >) # default
+   );
 }
 
 sub save {
