@@ -282,9 +282,16 @@ sub action_update {
       $self->args(),
    );
    my ($out, $err);
-   IPC::Run::run \@command, \undef, \$out, \*STDERR
-      or LOGDIE "cpanm: $? ($err)";
 
+   {
+      local $SIG{TERM} = sub {
+         WARN "cpanm: received TERM signal, ignoring";
+      };
+      IPC::Run::run \@command, \undef, \$out, \*STDERR
+         or LOGDIE "cpanm: $? ($err)";
+   }
+
+   INFO 'scan completed';
    $self->save($target->file('distlist.txt'), $out);
 
    $self->do_index($target);
