@@ -313,7 +313,7 @@ Pinto's repository root directory.
 
 =head1 DEPENDENCIES
 
-Path::Class and List::MoreUtils.
+L<Path::Class>, L<List::MoreUtils> and L<Log::Log4perl::Tiny>.
 
 
 =head1 BUGS AND LIMITATIONS
