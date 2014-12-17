@@ -118,15 +118,15 @@ coming from CPAN and your own distribution - already arranged in the
 right shape, but you need to generate an index. For example, this happens
 when you collect some distribution files using L<cpanminus>:
 
-   shell$ cpanminus -L /xxx --scandeps --save-dists dists Mod1 Mod2...
+   shell$ cpanminus -L xxx --save-dists dists Mod1 Mod2...
 
 because it saves the needed distributions in C<dists> but it does not
 generate the index. So, if you want to prepare a pack of modules to carry
 with your application, you can do like this:
 
    $ figure_out_modules > modlist
-   $ cpanm -L /xxx --scandeps --save-dists dists $(<modlist)
-   $ epan dists
+   $ cpanm -L xxx --save-dists dists $(<modlist)
+   $ epan index dists
    $ tar cvf dists.tar dists
 
 then carry dists.tar with you, at which point you can:
