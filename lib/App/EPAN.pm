@@ -53,7 +53,10 @@ sub run {
 }
 
 sub get_options {
-   (my $self, my $action, local @ARGV) = @_;
+   my $self = shift;
+   my $action = (scalar(@_) && length($_[0]) && (substr($_[0], 0, 1) ne '-'))
+      ? shift(@_) : 'no-action';
+   local @ARGV = @_;
    $self->action($action);
    my %config = ();
    GetOptions(
