@@ -339,6 +339,12 @@ END_OF_INSTALL
    }
 }
 
+{
+   no strict 'subs';
+   *action_install = \&action_update;
+   *action_add = \&action_update;
+}
+
 sub last_distlist {
    my ($self) = @_;
    return keys %{$self->last_index()->{bare_distro}};
