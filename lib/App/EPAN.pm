@@ -235,7 +235,7 @@ sub collect_index_for {
       }
       $data_for{distro}{$index_path} = $version_for;
       (my $bare_index_path = $index_path) =~
-         s{^(.)/\1./}{}mxs;
+         s{^(.)/(\1.)/(\2.*?)/}{$3/}mxs;
       $data_for{bare_distro}{$bare_index_path} = $version_for;
    }
    $self->last_index(\%data_for);
@@ -279,47 +279,59 @@ sub action_update {
    my $target = dir($self->config('target') // 'epan');
    $target->mkpath() unless -d $target;
 
+   my $dists = $target->stringify();
+   my $local = $target->subdir('local')->stringify();
    my @command = (
-      qw< cpanm -L /xxx --scandeps --format dists --save-dists >,
-      $target->stringify(),
+      qw< cpanm --reinstall --quiet --self-contained >,
+      '--local-lib-contained' => $local,
+      '--save-dists' => $dists,
       $self->args(),
    );
-   my ($out, $err);
 
+   my ($out, $err);
    {
       local $SIG{TERM} = sub {
          WARN "cpanm: received TERM signal, ignoring";
       };
-      IPC::Run::run \@command, \undef, \$out, \*STDERR
+      INFO "calling @command";
+      IPC::Run::run \@command, \undef, \*STDOUT, \*STDERR
          or LOGDIE "cpanm: $? ($err)";
    }
 
-   INFO 'scan completed';
-   $self->save($target->file('distlist.txt'), $out);
-
+   INFO 'onboarding completed, indexing...';
    $self->do_index($target);
+   my $data_for = $self->last_index();
 
-   my $modlist = $self->modlist_for($out);
-   $self->save($target->file('modlist.txt'), $modlist);
+   INFO 'saving distlist';
+   my @distros = $self->last_distlist();
+   $self->save($target->file('distlist.txt'), join "\n", @distros, '');
 
-   $self->save($target->file('install.sh'), <<'END_OF_INSTALL');
+   INFO 'saving modlist';
+   my @modules = $self->last_modlist();
+   $self->save($target->file('modlist.txt'), join "\n", @modules, '');
+
+   if (! -e $target->file('install.sh')) {
+      $self->save($target->file('install.sh'), <<'END_OF_INSTALL');
 #!/bin/bash
-bindir=$(dirname "$0")
-realbindir=$(readlink -f "$bindir")
+ME=$(readlink -f "$0")
+MYDIR=$(dirname "$ME")
 
-target=$1
-if [ -n "$target" ]; then
-   "$bindir/cpanm" --mirror "file://$realbindir" --mirror-only -L "$target" \
-      $(<"$realbindir/modlist.txt")
+TARGET="$MYDIR/local"
+[ $# -gt 0 ] && TARGET=$1
+
+if [ -n "$TARGET" ]; then
+   "$MYDIR/cpanm" --mirror "file://$MYDIR" --mirror-only \
+      -L "$TARGET" \
+      $(<"$MYDIR/modlist.txt")
 else
-   "$bindir/cpanm" --mirror "file://$realbindir" --mirror-only \
-      $(<"$realbindir/modlist.txt")
+   "$MYDIR/cpanm" --mirror "file://$MYDIR" --mirror-only \
+      $(<"$MYDIR/modlist.txt")
 fi
 END_OF_INSTALL
-
-   if (my $cpanm = which('cpanm')) {
-      File::Copy::copy($cpanm, $target->file('cpanm')->stringify());
    }
+
+   my $cpanm = which('cpanm');
+   File::Copy::copy($cpanm, $target->file('cpanm')->stringify());
 
    for my $f (qw< install.sh cpanm >) {
       my $file = $target->file($f);
@@ -327,12 +339,15 @@ END_OF_INSTALL
    }
 }
 
-sub modlist_for {
-   my ($self, $list) = @_;
-   my @list = split /\n/, $list;
-   my $data_for = $self->last_index()->{bare_distro};
-   my @retval = map { (sort keys %{$data_for->{$_}})[0] } @list;
-   return join "\n", @retval, '';
+sub last_distlist {
+   my ($self) = @_;
+   return keys %{$self->last_index()->{bare_distro}};
+}
+
+sub last_modlist {
+   my ($self) = @_;
+   my @retval = map { (sort keys %$_)[0] }
+      values %{$self->last_index()->{bare_distro}};
 }
 
 
