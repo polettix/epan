@@ -310,8 +310,9 @@ sub action_update {
    my @modules = $self->last_modlist();
    $self->save($target->file('modlist.txt'), join "\n", @modules, '');
 
-   if (! -e $target->file('install.sh')) {
-      $self->save($target->file('install.sh'), <<'END_OF_INSTALL');
+   my $file = $target->file('install.sh');
+   if (! -e $file) {
+      $self->save($file, <<'END_OF_INSTALL');
 #!/bin/bash
 ME=$(readlink -f "$0")
 MYDIR=$(dirname "$ME")
@@ -328,14 +329,14 @@ else
       $(<"$MYDIR/modlist.txt")
 fi
 END_OF_INSTALL
+      chmod 0777 &~ umask(), $file->stringify();
    }
 
-   my $cpanm = which('cpanm');
-   File::Copy::copy($cpanm, $target->file('cpanm')->stringify());
-
-   for my $f (qw< install.sh cpanm >) {
-      my $file = $target->file($f);
-      chmod 0777 &~ umask(), $file->stringify();
+   $file = $target->file('cpanm');
+   if (! -e $file) {
+      my $cpanm = which('cpanm');
+      File::Copy::copy($cpanm, $file->stringify());
+      chmod 0777 &~ umask(), $file->stringify());
    }
 }
 
