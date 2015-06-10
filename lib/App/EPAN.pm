@@ -228,6 +228,7 @@ sub collect_index_for {
       my $dm = Dist::Metadata->new(file => $file);
       my $version_for = $dm->package_versions();
       while (my ($module, $version) = each %$version_for) {
+         DEBUG "data for $module: [$version] [$index_path]";
          $data_for{module}{$module} = {
             version => $version,
             distro  => $index_path,
