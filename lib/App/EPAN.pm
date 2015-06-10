@@ -336,7 +336,7 @@ END_OF_INSTALL
    if (! -e $file) {
       my $cpanm = which('cpanm');
       File::Copy::copy($cpanm, $file->stringify());
-      chmod 0777 &~ umask(), $file->stringify());
+      chmod 0777 &~ umask(), $file->stringify();
    }
 }
 
