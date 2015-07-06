@@ -10,7 +10,7 @@ use 5.012;
 
 # Integrated logging facility
 use Log::Log4perl::Tiny qw( :easy :no_extra_logdie_message );
-Log::Log4perl->easy_init({level => $DEBUG, layout => '[%d %-5p] %m%n'});
+Log::Log4perl->easy_init({level => $INFO, layout => '[%d %-5p] %m%n'});
 
 use FindBin qw< $Bin >;
 use lib "$Bin/../lib";
