@@ -16,7 +16,7 @@ use File::Find::Rule ();
 use Compress::Zlib   ();
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 use Moo;
-use IPC::Run ();
+use IPC::Run   ();
 use File::Copy ();
 use File::Which qw< which >;
 
@@ -27,20 +27,16 @@ has configuration => (
    clearer   => 'clear_config',
    default   => sub { {} },
 );
-has action => (
-   is => 'rw',
-);
-has last_index => (
-   is => 'rw',
-);
+has action     => (is => 'rw',);
+has last_index => (is => 'rw',);
 
 sub run {
    my $package = shift;
-   my $self = $package->new();
+   my $self    = $package->new();
    $self->get_options(@_);
 
    my $action = $self->action();
-   if (! defined $action) {
+   if (!defined $action) {
       LOGDIE "no action";
    }
    if (my $method = $self->can("action_$action")) {
@@ -50,12 +46,14 @@ sub run {
       LOGDIE "action $action is not supported";
    }
    return;
-}
+} ## end sub run
 
 sub get_options {
    my $self = shift;
-   my $action = (scalar(@_) && length($_[0]) && (substr($_[0], 0, 1) ne '-'))
-      ? shift(@_) : 'no-action';
+   my $action =
+     (scalar(@_) && length($_[0]) && (substr($_[0], 0, 1) ne '-'))
+     ? shift(@_)
+     : 'no-action';
    local @ARGV = @_;
    $self->action($action);
    my %config = ();
@@ -76,11 +74,13 @@ sub get_options {
    pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
      if $config{help};
    pod2usage(-verbose => 2) if $config{man};
-   $self->configuration({
-      cmdline_config => \%config,
-      config => \%config,
-      args => [ @ARGV ],
-   });
+   $self->configuration(
+      {
+         cmdline_config => \%config,
+         config         => \%config,
+         args           => [@ARGV],
+      }
+   );
    return;
 } ## end sub get_options
 
@@ -99,48 +99,50 @@ sub action_index {
 
    my $basedir = dir(($self->args())[0] || cwd());
    return $self->do_index($basedir);
-}
+} ## end sub action_index
 
 sub _save {
    my ($self, $name, $contents, $config_key, $output) = @_;
 
    if (defined(my $confout = $self->config($config_key))) {
-      $output = ! length($confout) ? undef
-               :   $confout eq '-' ? \*STDOUT
-               :                     file($confout);
-   }
+      $output =
+          !length($confout) ? undef
+        : $confout eq '-'   ? \*STDOUT
+        :                     file($confout);
+   } ## end if (defined(my $confout...))
    if (defined $output) {
       INFO "saving output to $output";
-      $self->save($output, scalar(ref($contents) ? $contents->() : $contents));
+      $self->save($output,
+         scalar(ref($contents) ? $contents->() : $contents));
    }
    else {
       INFO "empty filename for $name file, skipping";
    }
-}
+} ## end sub _save
 
 sub do_index {
    my ($self, $basedir) = @_;
 
    $self->_save(
-      '01mailrc', # name
+      '01mailrc',    # name
       '',
-      'mailrc',             # configuration key to look output file
-      $basedir->file(qw< authors 01mailrc.txt.gz >) # default
+      'mailrc',      # configuration key to look output file
+      $basedir->file(qw< authors 01mailrc.txt.gz >)    # default
    );
 
    $self->_save(
-      '02packages.details', # name
-      sub {                 # where to get data from. Call is avoided if
-                            # no file on output
+      '02packages.details',    # name
+      sub {                    # where to get data from. Call is avoided if
+                               # no file on output
          INFO "getting contributions for regenerated index...";
          $self->index_for($basedir);
       },
-      'output',             # configuration key to look output file
-      $basedir->file(qw< modules 02packages.details.txt.gz >) # default
+      'output',                # configuration key to look output file
+      $basedir->file(qw< modules 02packages.details.txt.gz >)    # default
    );
 
    $self->_save(
-      '03modlist.data', # name
+      '03modlist.data',                                          # name
       <<'END_OF_03_MODLIST_DATA',
 File:        03modlist.data
 Description: These are the data that are published in the module
@@ -169,10 +171,10 @@ sub data {
 $CPAN::Modulelist::cols = [ ];
 $CPAN::Modulelist::data = [ ];
 END_OF_03_MODLIST_DATA
-      'modlist',             # configuration key to look output file
-      $basedir->file(qw< modules 03modlist.data.gz >) # default
+      'modlist',    # configuration key to look output file
+      $basedir->file(qw< modules 03modlist.data.gz >)    # default
    );
-}
+} ## end sub do_index
 
 sub save {
    my ($self, $path, $contents) = @_;
@@ -183,7 +185,7 @@ sub save {
    }
    else {
       $path->dir()->mkpath() unless -d $path->dir()->stringify();
-      $fh = $path->open('>');
+      $fh    = $path->open('>');
       $is_gz = $path->stringify() =~ m{\.gz$}mxs;
    }
 
@@ -201,7 +203,7 @@ sub save {
 
 sub index_for {
    my ($self, $path) = @_;
-   my @index  = $self->index_body_for($path);
+   my @index = $self->index_body_for($path);
    our $VERSION ||= 'whateva';
    my $header = <<"END_OF_HEADER";
 File:         02packages.details.txt
@@ -221,10 +223,12 @@ sub collect_index_for {
    $path = dir($path);
    my $idpath = $path->subdir(qw< authors id >);
    my %data_for;
-   for my $file (File::Find::Rule->extras({follow => 1})->file()->in($idpath->stringify())) {
+   for my $file (File::Find::Rule->extras({follow => 1})->file()
+      ->in($idpath->stringify()))
+   {
       INFO "indexing $file";
       my $index_path =
-         file($file)->relative($idpath)->as_foreign('Unix')->stringify();
+        file($file)->relative($idpath)->as_foreign('Unix')->stringify();
       my $dm = Dist::Metadata->new(file => $file);
       my $version_for = $dm->package_versions();
       while (my ($module, $version) = each %$version_for) {
@@ -234,32 +238,32 @@ sub collect_index_for {
             version => $version,
             distro  => $index_path,
          };
-      }
+      } ## end while (my ($module, $version...))
       $data_for{distro}{$index_path} = $version_for;
       (my $bare_index_path = $index_path) =~
-         s{^(.)/(\1.)/(\2.*?)/}{$3/}mxs;
+        s{^(.)/(\1.)/(\2.*?)/}{$3/}mxs;
       $data_for{bare_distro}{$bare_index_path} = $version_for;
-   }
+   } ## end for my $file (File::Find::Rule...)
    $self->last_index(\%data_for);
    return %data_for if wantarray();
    return \%data_for;
-}
+} ## end sub collect_index_for
 
 sub index_body_for {
    my ($self, $path) = @_;
 
-   my $data_for = $self->collect_index_for($path);
+   my $data_for        = $self->collect_index_for($path);
    my $module_data_for = $data_for->{module};
    my @retval;
    for my $module (sort keys %{$module_data_for}) {
-      my $md = $module_data_for->{$module};
-      my $version = $md->{version} || 'undef';
+      my $md         = $module_data_for->{$module};
+      my $version    = $md->{version} || 'undef';
       my $index_path = $md->{distro};
-      my $fw = 38 - length $version;
+      my $fw         = 38 - length $version;
       $fw = length $module if $fw < length $module;
       push @retval, sprintf "%-${fw}s %s  %s", $module, $version,
-         $index_path;
-   } ## end else [ if (-d $path)
+        $index_path;
+   } ## end for my $module (sort keys...)
    return @retval if wantarray();
    return \@retval;
 } ## end sub index_body_for
@@ -269,11 +273,11 @@ sub action_create {
 
    my $target = dir($self->config('target') // 'epan');
    LOGDIE "target directory $target exists, use update instead"
-      if -d $target;
+     if -d $target;
    $target->mkpath();
 
    return $self->action_update();
-}
+} ## end sub action_create
 
 sub action_update {
    my ($self) = @_;
@@ -281,12 +285,12 @@ sub action_update {
    my $target = dir($self->config('target') // 'epan');
    $target->mkpath() unless -d $target;
 
-   my $dists = $target->stringify();
-   my $local = $target->subdir('local')->stringify();
+   my $dists   = $target->stringify();
+   my $local   = $target->subdir('local')->stringify();
    my @command = (
       qw< cpanm --reinstall --quiet --self-contained >,
       '--local-lib-contained' => $local,
-      '--save-dists' => $dists,
+      '--save-dists'          => $dists,
       $self->args(),
    );
 
@@ -297,7 +301,7 @@ sub action_update {
       };
       INFO "calling @command";
       IPC::Run::run \@command, \undef, \*STDOUT, \*STDERR
-         or LOGDIE "cpanm: $? ($err)";
+        or LOGDIE "cpanm: $? ($err)";
    }
 
    INFO 'onboarding completed, indexing...';
@@ -313,7 +317,7 @@ sub action_update {
    $self->save($target->file('modlist.txt'), join "\n", @modules, '');
 
    my $file = $target->file('install.sh');
-   if (! -e $file) {
+   if (!-e $file) {
       $self->save($file, <<'END_OF_INSTALL');
 #!/bin/bash
 ME=$(readlink -f "$0")
@@ -331,21 +335,21 @@ else
       $(<"$MYDIR/modlist.txt")
 fi
 END_OF_INSTALL
-      chmod 0777 &~ umask(), $file->stringify();
-   }
+      chmod 0777 & ~umask(), $file->stringify();
+   } ## end if (!-e $file)
 
    $file = $target->file('cpanm');
-   if (! -e $file) {
+   if (!-e $file) {
       my $cpanm = which('cpanm');
       File::Copy::copy($cpanm, $file->stringify());
-      chmod 0777 &~ umask(), $file->stringify();
+      chmod 0777 & ~umask(), $file->stringify();
    }
-}
+} ## end sub action_update
 
 {
    no strict 'subs';
    *action_install = \&action_update;
-   *action_add = \&action_update;
+   *action_add     = \&action_update;
 }
 
 sub last_distlist {
@@ -355,10 +359,10 @@ sub last_distlist {
 
 sub last_modlist {
    my ($self) = @_;
-   my @retval = map { (sort keys %$_)[0] }
-      values %{$self->last_index()->{bare_distro}};
-}
-
+   my @retval =
+     map { (sort keys %$_)[0] }
+     values %{$self->last_index()->{bare_distro}};
+} ## end sub last_modlist
 
 1;
 __END__
