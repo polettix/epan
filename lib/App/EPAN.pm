@@ -221,7 +221,7 @@ sub collect_index_for {
    $path = dir($path);
    my $idpath = $path->subdir(qw< authors id >);
    my %data_for;
-   for my $file (File::Find::Rule->file()->in($idpath->stringify())) {
+   for my $file (File::Find::Rule->extras({follow => 1})->file()->in($idpath->stringify())) {
       INFO "indexing $file";
       my $index_path =
          file($file)->relative($idpath)->as_foreign('Unix')->stringify();
