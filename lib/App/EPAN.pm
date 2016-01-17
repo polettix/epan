@@ -157,14 +157,14 @@ package CPAN::Modulelist;
 # cannot 'use strict', because we normally run under Safe
 # use strict;
 sub data {
-my $result = {};
-my $primary = "modid";
-for (@$CPAN::Modulelist::data){
-my %hash;
-@hash{@$CPAN::Modulelist::cols} = @$_;
-$result->{$hash{$primary}} = \%hash;
-}
-$result;
+   my $result = {};
+   my $primary = "modid";
+   for (@$CPAN::Modulelist::data){
+      my %hash;
+      @hash{@$CPAN::Modulelist::cols} = @$_;
+      $result->{$hash{$primary}} = \%hash;
+   }
+   return $result;
 }
 $CPAN::Modulelist::cols = [ ];
 $CPAN::Modulelist::data = [ ];
