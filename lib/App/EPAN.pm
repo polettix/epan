@@ -126,7 +126,7 @@ sub do_index {
 
    $self->_save(
       '01mailrc',    # name
-      '',
+      '',            # contents
       'mailrc',      # configuration key to look output file
       $basedir->file(qw< authors 01mailrc.txt.gz >)    # default
    );
