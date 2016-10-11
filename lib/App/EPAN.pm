@@ -388,6 +388,15 @@ END_OF_INSTALL
    *action_add     = \&action_update;
 }
 
+sub action_list_obsoletes {
+   my ($self) = @_;
+   my $basedir = dir(($self->args())[0] || cwd());
+   my $data_for = $self->collect_index_for($basedir);
+   my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
+   say $basedir->file($_) for @obsoletes;
+   return;
+}
+
 sub last_distlist {
    my ($self) = @_;
    return keys %{$self->last_index()->{bare_distro}};
