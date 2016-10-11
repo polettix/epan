@@ -66,6 +66,7 @@ sub get_options {
         output|packages-details|o|2=s
         modlist|modlist-data|l|3=s
         target|t=s
+        author|a=s
         usage! help! man! version!
         )
    ) or pod2usage(-verbose => 99, -sections => 'USAGE');
@@ -102,6 +103,12 @@ sub action_index {
    my $basedir = dir(($self->args())[0] || cwd());
    return $self->do_index($basedir);
 } ## end sub action_index
+
+sub action_idx {
+   my $self = shift;
+   my $basedir = dir($self->config('target') || 'epan');
+   return $self->do_index($basedir);
+}
 
 sub _save {
    my ($self, $name, $contents, $config_key, $output) = @_;
@@ -248,6 +255,7 @@ sub collect_index_for {
          $_localdata_for{$module} = {
             version => $version,
             distro  => $index_path,
+            _file   => $file,
          };
          $score++;
          next unless exists($data_for{module}{$module});
@@ -266,7 +274,7 @@ sub collect_index_for {
 
       if ($score <= 0) { # didn't win against something already in
          DEBUG "marking $file as obsolete";
-         $data_for{obsolete}{$index_path} = 1;
+         $data_for{obsolete}{$file} = 1;
          next;
       }
 
@@ -274,7 +282,7 @@ sub collect_index_for {
       if ($previous) {
          my $oip = $previous->{distro};
          DEBUG "marking $oip as obsolete";
-         $data_for{obsolete}{$oip} = 1;
+         $data_for{obsolete}{$previous->{_file}} = 1;
          delete $data_for{module}{$_}
            for keys %{$data_for{distro}{$oip}};
       }
@@ -389,12 +397,45 @@ END_OF_INSTALL
    *action_add     = \&action_update;
 }
 
+sub action_inject {
+   my ($self) = @_;
+
+   my $target = dir($self->config('target') // 'epan');
+   $target->mkpath() unless -d $target;
+
+   my $author = $self->config('author') // $ENV{EPAN_AUTHOR} // 'LOCAL';
+   my $first = substr $author, 0, 1;
+   my $first_two = substr $author, 0, 2;
+   my $repo = $target->subdir(qw< authors id >, $first, $first_two, $author);
+   $repo->mkpath;
+   $repo = $repo->stringify;
+
+   File::Copy::copy($_, $repo) for $self->args;
+
+   INFO 'onboarding completed, indexing...';
+   $self->do_index($target);
+
+   return;
+}
+
 sub action_list_obsoletes {
    my ($self) = @_;
-   my $basedir = dir(($self->args())[0] || cwd());
+   my $basedir = dir($self->config('target') || 'epan');
    my $data_for = $self->collect_index_for($basedir);
    my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
-   say $basedir->file($_) for @obsoletes;
+   say for @obsoletes;
+   return;
+}
+
+sub action_purge_obsoletes {
+   my ($self) = @_;
+   my $basedir = dir($self->config('target') || 'epan');
+   my $data_for = $self->collect_index_for($basedir);
+   my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
+   for my $file (@obsoletes) {
+      INFO "removing $file";
+      unlink $file;
+   }
    return;
 }
 
