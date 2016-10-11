@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use English qw( -no_match_vars );
 use 5.012;
+use version;
 use autodie;
 use Getopt::Long qw< :config gnu_getopt >;
 use Pod::Usage qw< pod2usage >;
@@ -231,18 +232,40 @@ sub collect_index_for {
         file($file)->relative($idpath)->as_foreign('Unix')->stringify();
       my $dm = Dist::Metadata->new(file => $file);
       my $version_for = $dm->package_versions();
-      while (my ($module, $version) = each %$version_for) {
-         my $print_version = $version // 'undef';
-         DEBUG "data for $module: [$print_version] [$index_path]";
-         $data_for{module}{$module} = {
-            version => $version,
-            distro  => $index_path,
-         };
-      } ## end while (my ($module, $version...))
+
       $data_for{distro}{$index_path} = $version_for;
       (my $bare_index_path = $index_path) =~
         s{^(.)/(\1.)/(\2.*?)/}{$3/}mxs;
       $data_for{bare_distro}{$bare_index_path} = $version_for;
+
+      my %_localdata_for;
+      my $score = 0;
+      while (my ($module, $version) = each %$version_for) {
+         my $print_version = $version // 'undef';
+         DEBUG "data for $module: [$print_version] [$index_path]";
+         $_localdata_for{$module} = {
+            version => $version,
+            distro  => $index_path,
+         };
+         $score++;
+         next unless exists($data_for{module}{$module});
+         DEBUG 'some previous version exists';
+         if (! defined $version) {
+            $score--;
+            $score-- if defined($data_for{module}{$module}{version});
+         }
+         elsif (defined $data_for{module}{$module}{version}) {
+            my $tv = version->parse($version);
+            my $pv = version->parse($data_for{module}{$module}{version});
+            $score-- if $pv > $tv;
+         }
+      } ## end while (my ($module, $version...))
+
+      next unless $score; # no score, not the most recent
+      DEBUG 'getting this version';
+
+      # copy stuff over to the "official" data for modules
+      $data_for{module}{$_} = $_localdata_for{$_} for keys %_localdata_for;
    } ## end for my $file (File::Find::Rule...)
    $self->last_index(\%data_for);
    return %data_for if wantarray();
