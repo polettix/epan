@@ -54,7 +54,7 @@ sub get_options {
    my $action =
      (scalar(@_) && length($_[0]) && (substr($_[0], 0, 1) ne '-'))
      ? shift(@_)
-     : 'no-action';
+     : 'list-actions';
    $action =~ s{-}{_}gmxs;
    local @ARGV = @_;
    $self->action($action);
@@ -395,6 +395,17 @@ sub action_list_obsoletes {
    my $data_for = $self->collect_index_for($basedir);
    my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
    say $basedir->file($_) for @obsoletes;
+   return;
+}
+
+sub action_list_actions {
+   no strict 'refs';
+   say 'Available actions:';
+   say for
+     sort {$a cmp $b}
+     map {s/^action_/- /; s/_/-/g; $_ }
+     grep {/^action_/}
+     keys %{ref(shift)."::"};
    return;
 }
 
