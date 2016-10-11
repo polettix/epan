@@ -1,0 +1,11 @@
+requires 'perl', '5.012';
+requires 'Dist::Metadata';
+requires 'Path::Class';
+requires 'File::Find::Rule';
+requires 'Compress::Zlib';
+requires 'Log::Log4perl::Tiny';
+requires 'IPC::Run';
+requires 'File::Copy';
+requires 'File::Which';
+requires 'autodie';
+requires 'Moo';
