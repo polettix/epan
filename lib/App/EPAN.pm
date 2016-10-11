@@ -55,6 +55,7 @@ sub get_options {
      (scalar(@_) && length($_[0]) && (substr($_[0], 0, 1) ne '-'))
      ? shift(@_)
      : 'no-action';
+   $action =~ s{-}{_}gmxs;
    local @ARGV = @_;
    $self->action($action);
    my %config = ();
