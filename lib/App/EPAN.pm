@@ -240,6 +240,7 @@ sub collect_index_for {
 
       my %_localdata_for;
       my $score = 0;
+      my $previous;
       while (my ($module, $version) = each %$version_for) {
          my $print_version = $version // 'undef';
          DEBUG "data for $module: [$print_version] [$index_path]";
@@ -249,21 +250,33 @@ sub collect_index_for {
          };
          $score++;
          next unless exists($data_for{module}{$module});
+         $previous = $data_for{module}{$module};
          DEBUG 'some previous version exists';
          if (! defined $version) {
             $score--;
-            $score-- if defined($data_for{module}{$module}{version});
+            $score-- if defined($previous->{version});
          }
-         elsif (defined $data_for{module}{$module}{version}) {
+         elsif (defined $previous->{version}) {
             my $tv = version->parse($version);
-            my $pv = version->parse($data_for{module}{$module}{version});
+            my $pv = version->parse($previous->{version});
             $score-- if $pv > $tv;
          }
       } ## end while (my ($module, $version...))
 
-      next unless $score; # no score, not the most recent
-      DEBUG 'getting this version';
+      if ($score <= 0) { # didn't win against something already in
+         DEBUG "marking $file as obsolete";
+         $data_for{obsolete}{$index_path} = 1;
+         next;
+      }
 
+      DEBUG "getting $file data as winner (for the moment)";
+      if ($previous) {
+         my $oip = $previous->{distro};
+         DEBUG "marking $oip as obsolete";
+         $data_for{obsolete}{$oip} = 1;
+         delete $data_for{module}{$_}
+           for keys %{$data_for{distro}{$oip}};
+      }
       # copy stuff over to the "official" data for modules
       $data_for{module}{$_} = $_localdata_for{$_} for keys %_localdata_for;
    } ## end for my $file (File::Find::Rule...)
