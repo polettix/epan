@@ -257,22 +257,24 @@ sub collect_index_for {
             distro  => $index_path,
             _file   => $file,
          };
-         $score++;
+         next if $score != 0;
          next unless exists($data_for{module}{$module});
          $previous = $data_for{module}{$module};
          DEBUG 'some previous version exists';
          if (! defined $version) {
-            $score--;
-            $score-- if defined($previous->{version});
+            $score = -1 if defined($previous->{version});
          }
          elsif (defined $previous->{version}) {
             my $tv = version->parse($version);
             my $pv = version->parse($previous->{version});
-            $score-- if $pv > $tv;
+            $score = $tv <=> $pv;
          }
+         DEBUG "score: $score";
       } ## end while (my ($module, $version...))
 
-      if ($score <= 0) { # didn't win against something already in
+      DEBUG "FINAL SCORE $score";
+
+      if ($score < 0) { # didn't win against something already in
          DEBUG "marking $file as obsolete";
          $data_for{obsolete}{$file} = 1;
          next;
