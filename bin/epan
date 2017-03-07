@@ -23,7 +23,7 @@ __END__
 
 =head1 NAME
 
-epan - regenerated index of a [Mini-]CPAN tree
+epan - Exclusive Perl Archive Nook
 
 =head1 VERSION
 
@@ -36,10 +36,30 @@ Ask the version number to the script itself, calling:
 
    epan [--usage] [--help] [--man] [--version]
 
+   # "create" insists on *not* finding dirname and creating it
    epan create [-t|--target dirname] Module1 [Module2...]
 
+   # "idx" is how "index" was supposed to be specified
+   epan idx [-o|--output filename] [-t|--target dirname]
+
+   # "inject" adds local distribution archives
+   epan inject [-t|--target dirname] File1 [File2...]
+
+   # "list-actions" is also "list_actions"
+   epan list-actions
+
+   # "list-obsoletes" is also "list_obsoletes"
+   epan list-obsoletes [-t|--target dirname]
+
+   # "purge-obsoletes" is also "purge_obsoletes"
+   epan purge-obsoletes [-t|--target dirname]
+
+   # "update" is also "add" and "install"
    epan update [-t|--target dirname] Module1 [Module2...]
 
+
+
+   # deprecated, don't use this but idx instead
    epan index [-o|--output filename] [directory]
 
 
@@ -48,12 +68,11 @@ Ask the version number to the script itself, calling:
    # collects all what's needed to install Dancer somewhere
    shell$ epan create -t dancer-stuff Dancer
 
-   # regenerated index in ./modules/02packages.details.txt.gz, assuming
-   # to be in root directory of CPAN tree
-   shell$ epan index
+   # regenerate index in ./modules/02packages.details.txt.gz
+   shell$ epan idx -t dancer-stuff
 
    # prints index on standard output, works on /path/to/minicpan
-   shell$ epan index -o - /path/to/minicpan
+   shell$ epan idx -o - -t /path/to/minicpan
 
 
 =head1 DESCRIPTION
@@ -62,10 +81,10 @@ This program helps you creating and managing an EPAN - a version of the
 CPAN that is trimmed down to your needs for installing specific stuff.
 
 To start with an example, suppose you have to install Dancer and a couple
-of its plugins in a machine that - for good reasons - is not connected
-to the Internet. It's easy to get the distribution files for Dancer and
-the plugins... but what about the dependencies? It can easily become a
-nightmare, forcing you to go back and forth with new modules as soon as
+of its plugins in a machine that - for good reasons - is not connected to
+the Internet. It's easy to get the distribution files for Dancer and the
+plugins... but what about the dependencies? It can easily become
+a nightmare, forcing you to go back and forth with new modules as soon as
 you discover the need to install them.
 
 Thanks to L<cpanm>, this is quite easier these days: it can actually do
@@ -86,11 +105,9 @@ directory structure that is generated lacks a proper index file (located
 in F<modules/02package.details.txt.gz>) so it would be difficult to use
 the normal toolchain.
 
-
-L<epan> aims at
-filling up the last mile to get the job done, providing you with a
-subdirectory that is ready for deployment, with all the bits in place to
-push automation as much as possible. So you can do this:
+L<epan> aims at filling up the last mile to get the job done, providing
+you with a subdirectory that is ready for deployment, with all the bits in
+place to push automation as much as possible. So you can do this:
 
    # on the machine connected to the Internet or to a minicpan
    $ epan create Dancer Dancer::Plugin::FlashNote ...
@@ -107,17 +124,46 @@ optionally providing an installation target directory:
 
    $ ./install.sh /path/to/local/perl
 
-=head2 C<index>
+The program C<epan> is actually a unified access point to several
+different tools for manipulating your I<exclusive Perl archive nook>. Most
+of these commands operate upon a I<target directory> that is where your
+EPAN is stored; this can be specified via option C<-t> or its longer
+version C<--target>. By default, the target directory is assumed to be
+C<epan> in the current directory.
 
-This program regenerates the index in a tree that is (mostly) compliant
-with how CPAN is organized (which is what most tools expect). In particular,
-it regenerates the file F<modules/02package.details.txt.gz>, used by these
-tools to see where to get the files related to a module.
+=head2 C<add>, C<install> and C<update>
 
-This can be useful when you have a starting base - compound of modules
-coming from CPAN and your own distribution - already arranged in the
-right shape, but you need to generate an index. For example, this happens
-when you collect some distribution files using L<cpanminus>:
+These commands are synonimous in C<epan>, and all help you pull a module
+and its dependencies from a CPAN mirror right into your EPAN, regenerating
+the index at the end of the process. The syntax is:
+
+   epan add # or install or update \
+      [-t|--target directory]
+      Module1 [Module2...]
+
+So, in addition to the common option C<-t> for setting the right target
+directory, it accepts a list of module names to install (with their
+dependencies).
+
+=head2 C<create> 
+
+This command is almost the same as C<add> and its aliases, with the
+exception that the target directory MUST NOT already exist when called.
+
+=head2 C<idx> (and C<index>)
+
+Regenerate the index so that tools like C<cpanm> are happy about what they
+find and treat your target directory as a real CPAN sort-of mirror. The
+syntax is the following:
+
+   epan idx [-t|--target dirname]
+
+Note that other commands (e.g. C<add> or C<create>) already do the
+indexing. This command can be useful when you have a starting base (i.e.
+a compound of modules coming from CPAN and your own distribution) already
+arranged in the right directory tree, but you need to generate an index.
+For example, this happens when you collect some distribution files using
+L<cpanminus>:
 
    shell$ cpanminus -L xxx --save-dists dists Mod1 Mod2...
 
@@ -127,39 +173,91 @@ with your application, you can do like this:
 
    $ figure_out_modules > modlist
    $ cpanm -L xxx --save-dists dists $(<modlist)
-   $ epan index dists
+   $ epan idx -t dists
    $ tar cvf dists.tar dists
 
 then carry dists.tar with you, at which point you can:
 
    $ cpanm --mirror file://$YOURPATH --mirror-only Mod1 Mod2 ...
 
+The alternative C<index> does the same with a different interface, i.e.
+you can specify the directory name without having to type either C<-t> or
+C<--target>, and the default target directory is the current directory (as
+opposed to the C<epan> sub-directory):
+
+   epan index [dirname]
+
+It is strongly deprecated to use C<index> as C<idx> provides the same
+functionality while being consistent with the parameters of the other
+commands.
+
+=head2 C<inject>
+
+If you have some local distribution files, e.g. generated by yourself and
+not (yet) uploaded to CPAN, you can inject them into a local EPAN. The
+syntax is straightforward:
+
+   epan inject \ 
+      [-a|--author author-name] \
+      [-t|--target dirname] File1 [File2...]
+
+=head2 C<list-actions> and C<list_actions>
+
+Prints out the list of available commands.
+
+=head2 C<list-obsoletes> and C<list_obsoletes>
+
+   epan list-obsoletes [-t|--target dirname]
+
+Prints out a list of obsolete distributions in the EPAN. A distribution is
+considered I<obsolete> if there is a newer corresponding version in the
+EPAN. E.g. suppose that you work on C<Acme::Whatever> and inject version
+C<0.2>:
+
+   epan inject Acme-Whatever-0.2.tar.gz
+   # ...
+
+then you work on it some more time, and inject version C<0.3>:
+
+   epan inject Acme-Whatever-0.2.tar.gz
+   # ...
+
+Now your EPAN contains two distribution packages for C<Acme::Whatever>,
+one for release C<0.2> (which is the obsolete one) and one for the newest
+version C<0.3>.
+
+=head2 C<purge-obsoletes> and C<purge_obsoletes>
+
+   epan purge-obsoletes [-t|--target dirname]
+
+Remove (purge) obsolete distribution packages from the EPAN.
+
 =head1 OPTIONS
 
-You can simply call the program, which means the following:
+The following options are supported, even though not all actions use them
+all:
 
 =over
 
-=item *
+=item -1 | -m | --mailrc
 
-the current working directory (see L<Cwd>) is the root of your CPAN-like
-tree
+path to the file C<01mailrc.txt.gz>, defaults to
+C<authors/01mailrc.txt.gz> inside the target directory
 
-=item *
+=item -2 | -o | --output | --package-details
 
-the F<02packages.details.txt.gz> file will be saved into
-F<modules/02packages.details.txt.gz> under the current directory.
+path to the file for C<02packages.details.txt.gz>, defaults to
+C<modules/02packages.details.txt.gz> inside the target directory. Yes, you
+can use C<-> with the I<usual> meaning.
 
-=back
+=item -3 | -l | --modlist | --modlist-data
 
-If you want, you can provide the path to the root of your CPAN-like tree
-as a straight command-line option:
+path to the file C<03modlist.data.gz>, defaults to
+C<modules/03modlist.data.gz> inside the target directory.
 
-   $ epan /path/to/your/cpan
+=item -a | --author author-name
 
-Apart from this, the following options are supported:
-
-=over
+module author to use when doing injection of local distribution packages
 
 =item --help
 
@@ -170,15 +268,11 @@ the options and some examples from the synopsis.
 
 print out the full documentation for the script.
 
-=item --output | -o filename
+=item -t | --target dirname
 
-specify where to send the output index. If you set C<->, then it will be
-sent to standard output. Otherwise, the provided C<filename> will be
-considered - well - a filename; depending on how it ends (i.e. with
-C<.gz> or not) it will be saved as a gzipped file or as plaintext.
-
-By default it is set to F<modules/02packages.details.txt.gz> under
-the directory specified as the root of your CPAN-like tree.
+set the directory of the root for the EPAN to work on. Defaults to the
+sub-directory C<epan> in the current directory. This option applies to all
+commands except C<list-actions> and C<index>.
 
 =item --usage
 
@@ -192,7 +286,17 @@ print the version of the script.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
-epan requires no configuration files or environment variables.
+epan requires no configuration files. The following environment variable
+is honored:
+
+=over
+
+=item C<EPAN_AUTHOR>
+
+set the name of the I<pause account> to use for indexing. Defaults to
+C<LOCAL>. It is overridden by C<--author>.
+
+=back
 
 
 =head1 DEPENDENCIES
@@ -235,7 +339,7 @@ Flavio Poletti C<polettix@cpan.org>
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (C) 2011-2014 by Flavio Poletti C<polettix@cpan.org>.
+Copyright (C) 2011-2014, 2017 by Flavio Poletti C<polettix@cpan.org>.
 
 This script is free software; you can redistribute it and/or
 modify it under the terms of the Artistic License 2.0.
