@@ -97,6 +97,11 @@ sub config {
    return $self->configuration()->{config}{shift @_};
 }
 
+sub target_dir {
+   my $self = shift;
+   return dir($self->config('target') // 'epan');
+}
+
 sub action_index {
    my ($self) = @_;
 
@@ -106,8 +111,7 @@ sub action_index {
 
 sub action_idx {
    my $self = shift;
-   my $basedir = dir($self->config('target') || 'epan');
-   return $self->do_index($basedir);
+   return $self->do_index($self->target_dir);
 }
 
 sub _save {
@@ -318,7 +322,7 @@ sub index_body_for {
 sub action_create {
    my ($self) = @_;
 
-   my $target = dir($self->config('target') // 'epan');
+   my $target = $self->target_dir;
    LOGDIE "target directory $target exists, use update instead"
      if -d $target;
    $target->mkpath();
@@ -329,7 +333,7 @@ sub action_create {
 sub action_update {
    my ($self) = @_;
 
-   my $target = dir($self->config('target') // 'epan');
+   my $target = $self->target_dir;
    $target->mkpath() unless -d $target;
 
    my $dists   = $target->stringify();
@@ -402,7 +406,7 @@ END_OF_INSTALL
 sub action_inject {
    my ($self) = @_;
 
-   my $target = dir($self->config('target') // 'epan');
+   my $target = $self->target_dir;
    $target->mkpath() unless -d $target;
 
    my $author = $self->config('author') // $ENV{EPAN_AUTHOR} // 'LOCAL';
@@ -422,7 +426,7 @@ sub action_inject {
 
 sub action_list_obsoletes {
    my ($self) = @_;
-   my $basedir = dir($self->config('target') || 'epan');
+   my $basedir = $self->target_dir;
    my $data_for = $self->collect_index_for($basedir);
    my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
    say for @obsoletes;
@@ -431,7 +435,7 @@ sub action_list_obsoletes {
 
 sub action_purge_obsoletes {
    my ($self) = @_;
-   my $basedir = dir($self->config('target') || 'epan');
+   my $basedir = $self->target_dir;
    my $data_for = $self->collect_index_for($basedir);
    my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
    for my $file (@obsoletes) {
