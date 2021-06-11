@@ -66,6 +66,7 @@ sub get_options {
         output|packages-details|o|2=s
         modlist|modlist-data|l|3=s
         target|t=s
+        test|T!
         author|a=s
         usage! help! man! version!
         )
@@ -100,6 +101,11 @@ sub config {
 sub target_dir {
    my $self = shift;
    return dir($self->config('target') // 'epan');
+}
+
+sub execute_tests {
+   my $self = shift;
+   return $self->config('test');
 }
 
 sub action_index {
@@ -340,6 +346,7 @@ sub action_update {
    my $local   = $target->subdir('local')->stringify();
    my @command = (
       qw< cpanm --reinstall --quiet --self-contained >,
+      ($self->execute_tests ? () : '--notest'),
       '--local-lib-contained' => $local,
       '--save-dists'          => $dists,
       $self->args(),
