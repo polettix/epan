@@ -37,14 +37,14 @@ sub run {
    $self->get_options(@_);
 
    my $action = $self->action();
-   if (!defined $action) {
-      LOGDIE "no action";
-   }
+   pod2usage(-verbose => 99, -sections => 'USAGE') unless defined $action;
    if (my $method = $self->can("action_$action")) {
       $self->$method();
    }
    else {
-      LOGDIE "action $action is not supported";
+      FATAL "action '$action' is not supported\n";
+      $self->action_list_actions;
+      exit 1;
    }
    return;
 } ## end sub run
@@ -453,13 +453,14 @@ sub action_purge_obsoletes {
 }
 
 sub action_list_actions {
+   my $self = shift;
    no strict 'refs';
    say 'Available actions:';
    say for
      sort {$a cmp $b}
      map {s/^action_/- /; s/_/-/g; $_ }
-     grep {/^action_/}
-     keys %{ref(shift)."::"};
+     grep {/^action_/ && $self->can($_)}
+     keys %{ref($self)."::"};
    return;
 }
 

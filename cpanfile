@@ -9,3 +9,4 @@ requires 'File::Copy';
 requires 'File::Which';
 requires 'autodie';
 requires 'Moo';
+requires 'Module::ScanDeps';
