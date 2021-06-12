@@ -1,11 +1,9 @@
 package App::EPAN;
 
-# ABSTRACT: Exclusive Perl Archive Nook
-
-use strict;
+use 5.012;
+{ our $VERSION = '0.001' }
 use warnings;
 use English qw( -no_match_vars );
-use 5.012;
 use version;
 use autodie;
 use Getopt::Long qw< :config gnu_getopt >;
@@ -109,15 +107,13 @@ sub execute_tests {
 }
 
 sub action_index {
-   my ($self) = @_;
-
-   my $basedir = dir(($self->args())[0] || cwd());
-   return $self->do_index($basedir);
-} ## end sub action_index
-
-sub action_idx {
    my $self = shift;
-   return $self->do_index($self->target_dir);
+   return $self->_do_index($self->target_dir);
+}
+
+{
+   no strict 'refs';
+   *{action_idx} = \&action_index;
 }
 
 sub _save {
@@ -131,7 +127,7 @@ sub _save {
    } ## end if (defined(my $confout...))
    if (defined $output) {
       INFO "saving output to $output";
-      $self->save($output,
+      $self->_save2($output,
          scalar(ref($contents) ? $contents->() : $contents));
    }
    else {
@@ -139,7 +135,7 @@ sub _save {
    }
 } ## end sub _save
 
-sub do_index {
+sub _do_index {
    my ($self, $basedir) = @_;
 
    $self->_save(
@@ -154,7 +150,7 @@ sub do_index {
       sub {                    # where to get data from. Call is avoided if
                                # no file on output
          INFO "getting contributions for regenerated index...";
-         $self->index_for($basedir);
+         $self->_index_for($basedir);
       },
       'output',                # configuration key to look output file
       $basedir->file(qw< modules 02packages.details.txt.gz >)    # default
@@ -193,9 +189,9 @@ END_OF_03_MODLIST_DATA
       'modlist',    # configuration key to look output file
       $basedir->file(qw< modules 03modlist.data.gz >)    # default
    );
-} ## end sub do_index
+} ## end sub _do_index
 
-sub save {
+sub _save2 {
    my ($self, $path, $contents) = @_;
    my ($fh, $is_gz);
    if (ref($path) eq 'GLOB') {
@@ -218,11 +214,11 @@ sub save {
       print {$fh} $contents;
    }
    return;
-} ## end sub save
+} ## end sub _save2
 
-sub index_for {
+sub _index_for {
    my ($self, $path) = @_;
-   my @index = $self->index_body_for($path);
+   my @index = $self->_index_body_for($path);
    our $VERSION ||= 'whateva';
    my $header = <<"END_OF_HEADER";
 File:         02packages.details.txt
@@ -235,9 +231,9 @@ Line-Count:   ${ \ scalar @index }
 Last-Updated: ${ \ scalar localtime() }
 END_OF_HEADER
    return join "\n", $header, @index, '';
-} ## end sub index_for
+} ## end sub _index_for
 
-sub collect_index_for {
+sub _collect_index_for {
    my ($self, $path) = @_;
    $path = dir($path);
    my $idpath = $path->subdir(qw< authors id >);
@@ -304,12 +300,12 @@ sub collect_index_for {
    $self->last_index(\%data_for);
    return %data_for if wantarray();
    return \%data_for;
-} ## end sub collect_index_for
+} ## end sub _collect_index_for
 
-sub index_body_for {
+sub _index_body_for {
    my ($self, $path) = @_;
 
-   my $data_for        = $self->collect_index_for($path);
+   my $data_for        = $self->_collect_index_for($path);
    my $module_data_for = $data_for->{module};
    my @retval;
    for my $module (sort keys %{$module_data_for}) {
@@ -323,7 +319,7 @@ sub index_body_for {
    } ## end for my $module (sort keys...)
    return @retval if wantarray();
    return \@retval;
-} ## end sub index_body_for
+} ## end sub _index_body_for
 
 sub action_create {
    my ($self) = @_;
@@ -363,20 +359,20 @@ sub action_update {
    }
 
    INFO 'onboarding completed, indexing...';
-   $self->do_index($target);
+   $self->_do_index($target);
    my $data_for = $self->last_index();
 
    INFO 'saving distlist';
    my @distros = $self->last_distlist();
-   $self->save($target->file('distlist.txt'), join "\n", @distros, '');
+   $self->_save2($target->file('distlist.txt'), join "\n", @distros, '');
 
    INFO 'saving modlist';
    my @modules = $self->last_modlist();
-   $self->save($target->file('modlist.txt'), join "\n", @modules, '');
+   $self->_save2($target->file('modlist.txt'), join "\n", @modules, '');
 
    my $file = $target->file('install.sh');
    if (!-e $file) {
-      $self->save($file, <<'END_OF_INSTALL');
+      $self->_save2($file, <<'END_OF_INSTALL');
 #!/bin/bash
 ME=$(readlink -f "$0")
 MYDIR=$(dirname "$ME")
@@ -426,7 +422,7 @@ sub action_inject {
    File::Copy::copy($_, $repo) for $self->args;
 
    INFO 'onboarding completed, indexing...';
-   $self->do_index($target);
+   $self->_do_index($target);
 
    return;
 }
@@ -434,7 +430,7 @@ sub action_inject {
 sub action_list_obsoletes {
    my ($self) = @_;
    my $basedir = $self->target_dir;
-   my $data_for = $self->collect_index_for($basedir);
+   my $data_for = $self->_collect_index_for($basedir);
    my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
    say for @obsoletes;
    return;
@@ -443,7 +439,7 @@ sub action_list_obsoletes {
 sub action_purge_obsoletes {
    my ($self) = @_;
    my $basedir = $self->target_dir;
-   my $data_for = $self->collect_index_for($basedir);
+   my $data_for = $self->_collect_index_for($basedir);
    my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
    for my $file (@obsoletes) {
       INFO "removing $file";

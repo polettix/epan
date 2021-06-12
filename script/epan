@@ -150,26 +150,28 @@ dependencies).
 This command is almost the same as C<add> and its aliases, with the
 exception that the target directory MUST NOT already exist when called.
 
-=head2 C<idx> (and C<index>)
+=head2 C<index>
 
 Regenerate the index so that tools like C<cpanm> are happy about what they
 find and treat your target directory as a real CPAN sort-of mirror. The
 syntax is the following:
 
-   epan idx [-t|--target dirname]
+   epan index [-t|--target dirname]
 
 Note that other commands (e.g. C<add> or C<create>) already do the
 indexing. This command can be useful when you have a starting base (i.e.
 a compound of modules coming from CPAN and your own distribution) already
 arranged in the right directory tree, but you need to generate an index.
 For example, this happens when you collect some distribution files using
-L<cpanminus>:
+C<cpanm>:
 
    shell$ cpanminus -L xxx --save-dists dists Mod1 Mod2...
 
 because it saves the needed distributions in C<dists> but it does not
-generate the index. So, if you want to prepare a pack of modules to carry
-with your application, you can do like this:
+generate the index. The same happens when using C<carton>.
+
+In these cases, if you want to prepare a pack of modules to carry with your
+application, you can do like this:
 
    $ figure_out_modules > modlist
    $ cpanm -L xxx --save-dists dists $(<modlist)
@@ -179,17 +181,6 @@ with your application, you can do like this:
 then carry dists.tar with you, at which point you can:
 
    $ cpanm --mirror file://$YOURPATH --mirror-only Mod1 Mod2 ...
-
-The alternative C<index> does the same with a different interface, i.e.
-you can specify the directory name without having to type either C<-t> or
-C<--target>, and the default target directory is the current directory (as
-opposed to the C<epan> sub-directory):
-
-   epan index [dirname]
-
-It is strongly deprecated to use C<index> as C<idx> provides the same
-functionality while being consistent with the parameters of the other
-commands.
 
 =head2 C<inject>
 
@@ -339,7 +330,7 @@ Flavio Poletti C<polettix@cpan.org>
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (C) 2011-2014, 2017 by Flavio Poletti C<polettix@cpan.org>.
+Copyright (C) 2011-2021 by Flavio Poletti C<polettix@cpan.org>.
 
 This script is free software; you can redistribute it and/or
 modify it under the terms of the Artistic License 2.0.

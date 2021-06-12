@@ -1,2 +1,4 @@
 *.swp
 /local/
+/.build/
+/App-EPAN-*
