@@ -58,11 +58,7 @@
    "provides" : {
       "App::EPAN" : {
          "file" : "lib/App/EPAN.pm",
-         "version" : "0.001"
-      },
-      "CPAN::Modulelist" : {
-         "file" : "lib/App/EPAN.pm",
-         "version" : "0.001"
+         "version" : "0.001001"
       }
    },
    "release_status" : "stable",
@@ -77,7 +73,7 @@
          "web" : "https://github.com/polettix/epan"
       }
    },
-   "version" : "0.001",
+   "version" : "0.001001",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
    ],
