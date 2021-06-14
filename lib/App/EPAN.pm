@@ -1,7 +1,7 @@
 package App::EPAN;
 
 use 5.012;
-{ our $VERSION = '0.001001' }
+{ our $VERSION = '0.001002' }
 use warnings;
 use English qw( -no_match_vars );
 use version;
