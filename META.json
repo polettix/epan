@@ -21,6 +21,9 @@
          "share",
          "t",
          "xt"
+      ],
+      "package" : [
+         "CPAN::Modulelist"
       ]
    },
    "prereqs" : {

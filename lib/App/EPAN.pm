@@ -156,7 +156,9 @@ sub _do_index {
       $basedir->file(qw< modules 02packages.details.txt.gz >)    # default
    );
 
-   my $_03modlist_data_1 = <<'END_OF_03_MODLIST_DATA_1';
+   $self->_save(
+      '03modlist.data',                                          # name
+      <<'END_OF_03_MODLIST_DATA',
 File:        03modlist.data
 Description: These are the data that are published in the module
         list, but they may be more recent than the latest posted
@@ -167,10 +169,7 @@ Modcount:    0
 Written-By:  PAUSE version 1.005
 Date:        Sun, 28 Jul 2013 07:41:15 GMT
 
-pac
-END_OF_03_MODLIST_DATA_1
-   my $_03modlist_data_2 = <<'END_OF_03_MODLIST_DATA_2';
-kage CPAN::Modulelist;
+package CPAN::Modulelist;
 # Usage: print Data::Dumper->new([CPAN::Modulelist->data])->Dump or similar
 # cannot 'use strict', because we normally run under Safe
 # use strict;
@@ -186,13 +185,7 @@ sub data {
 }
 $CPAN::Modulelist::cols = [ ];
 $CPAN::Modulelist::data = [ ];
-END_OF_03_MODLIST_DATA_2
-
-   $_03modlist_data_1 =~ s{\s+\z}{}mxs;
-   $_03modlist_data_2 =~ s{\A\s+}{}mxs;
-   $self->_save(
-      '03modlist.data',                                          # name
-      "$_03modlist_data_1$_03modlist_data_2",
+END_OF_03_MODLIST_DATA
       'modlist',    # configuration key to look output file
       $basedir->file(qw< modules 03modlist.data.gz >)    # default
    );

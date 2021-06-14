@@ -1,4 +1,5 @@
 {{$NEXT}}
+   - use hint about ignoring CPAN::Modulelist via CPAN::Meta stuff
 
 0.001001  2021-06-12 18:23:27 CEST
    - avoid tripping PAUSE on a text with a package inside   
