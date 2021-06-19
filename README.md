@@ -15,8 +15,8 @@ Ask the version number to the script itself, calling:
     # "create" insists on *not* finding dirname and creating it
     epan create [-t|--target dirname] Module1 [Module2...]
 
-    # "idx" is how "index" was supposed to be specified
-    epan idx [-o|--output filename] [-t|--target dirname]
+    # "index" indexes directories from Carton too
+    epan index [-o|--output filename] [-t|--target dirname]
 
     # "inject" adds local distribution archives
     epan inject [-t|--target dirname] File1 [File2...]
@@ -32,11 +32,6 @@ Ask the version number to the script itself, calling:
 
     # "update" is also "add" and "install"
     epan update [-t|--target dirname] Module1 [Module2...]
-
-
-
-    # deprecated, don't use this but idx instead
-    epan index [-o|--output filename] [directory]
 
 # EXAMPLES
 
@@ -149,7 +144,7 @@ application, you can do like this:
 
     $ figure_out_modules > modlist
     $ cpanm -L xxx --save-dists dists $(<modlist)
-    $ epan idx -t dists
+    $ epan index -t dists
     $ tar cvf dists.tar dists
 
 then carry dists.tar with you, at which point you can:
@@ -195,7 +190,8 @@ version `0.3`.
 
     epan purge-obsoletes [-t|--target dirname]
 
-Remove (purge) obsolete distribution packages from the EPAN.
+Remove (purge) obsolete distribution packages from the EPAN. See above for what
+_obsolete_ means.
 
 # OPTIONS
 
@@ -270,7 +266,8 @@ The following non-core modules are used:
 
 No bugs have been reported.
 
-Please report any bugs or feature requests through http://rt.cpan.org/
+Please report any bugs or feature requests through
+[https://github.com/polettix/epan/issues](https://github.com/polettix/epan/issues).
 
 # AUTHOR
 
@@ -280,9 +277,14 @@ Flavio Poletti `polettix@cpan.org`
 
 Copyright (C) 2011-2021 by Flavio Poletti `polettix@cpan.org`.
 
-This script is free software; you can redistribute it and/or
-modify it under the terms of the Artistic License 2.0.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful,
-but without any warranty; without even the implied warranty of
-merchantability or fitness for a particular purpose.
+> [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
