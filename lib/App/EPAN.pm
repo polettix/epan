@@ -106,10 +106,7 @@ sub execute_tests {
    return $self->config('test');
 }
 
-sub action_index {
-   my $self = shift;
-   return $self->_do_index($self->target_dir);
-}
+sub action_index { return shift->_do_index }
 
 {
    no strict 'refs';
@@ -137,6 +134,9 @@ sub _save {
 
 sub _do_index {
    my ($self, $basedir) = @_;
+   $basedir //= $self->target_dir;
+   LOGDIE "path '$basedir' does not exist (wrong -t option?)"
+      unless -d $basedir;
 
    $self->_save(
       '01mailrc',    # name
@@ -218,6 +218,7 @@ sub _save2 {
 
 sub _index_for {
    my ($self, $path) = @_;
+   $path //= $self->target_dir;
    my @index = $self->_index_body_for($path);
    our $VERSION ||= 'whateva';
    my $header = <<"END_OF_HEADER";
@@ -235,7 +236,10 @@ END_OF_HEADER
 
 sub _collect_index_for {
    my ($self, $path) = @_;
+   $path //= $self->target_dir;
    $path = dir($path);
+   LOGDIE "path '$path' does not exist (wrong -t option?)" unless -d $path;
+
    my $idpath = $path->subdir(qw< authors id >);
    my %data_for;
    for my $file (File::Find::Rule->extras({follow => 1})->file()
@@ -304,6 +308,7 @@ sub _collect_index_for {
 
 sub _index_body_for {
    my ($self, $path) = @_;
+   $path //= $self->target_dir;
 
    my $data_for        = $self->_collect_index_for($path);
    my $module_data_for = $data_for->{module};
@@ -329,7 +334,7 @@ sub action_create {
      if -d $target;
    $target->mkpath();
 
-   return $self->action_update();
+   return $self->action_update;
 } ## end sub action_create
 
 sub action_update {
@@ -427,21 +432,22 @@ sub action_inject {
    return;
 }
 
-sub action_list_obsoletes {
+sub _list_obsoletes {
    my ($self) = @_;
    my $basedir = $self->target_dir;
    my $data_for = $self->_collect_index_for($basedir);
-   my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
-   say for @obsoletes;
+   return sort {$a cmp $b} keys %{$data_for->{obsolete}};
+}
+
+sub action_list_obsoletes {
+   my ($self) = @_;
+   say for $self->_list_obsoletes;
    return;
 }
 
 sub action_purge_obsoletes {
    my ($self) = @_;
-   my $basedir = $self->target_dir;
-   my $data_for = $self->_collect_index_for($basedir);
-   my @obsoletes = sort {$a cmp $b} keys %{$data_for->{obsolete}};
-   for my $file (@obsoletes) {
+   for my $file ($self->_list_obsoletes) {
       INFO "removing $file";
       unlink $file;
    }
