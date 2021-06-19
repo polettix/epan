@@ -13,13 +13,28 @@ Ask the version number to the script itself, calling:
     epan [--usage] [--help] [--man] [--version]
 
     # "create" insists on *not* finding dirname and creating it
-    epan create [-t|--target dirname] Module1 [Module2...]
+    epan create
+       [-1|-m|--mailrc path]
+       [-2|-o|--output path]
+       [-3|-l|--modlist path]
+       [-t|--target dirname]
+       Module1 [Module2...]
 
     # "index" indexes directories from Carton too
-    epan index [-o|--output filename] [-t|--target dirname]
+    epan index
+       [-1|-m|--mailrc path]
+       [-2|-o|--output path]
+       [-3|-l|--modlist path]
+       [-t|--target dirname]
 
     # "inject" adds local distribution archives
-    epan inject [-t|--target dirname] File1 [File2...]
+    epan inject
+       [-1|-m|--mailrc path]
+       [-2|-o|--output path]
+       [-3|-l|--modlist path]
+       [-a|--author name]
+       [-t|--target dirname]
+       File1 [File2...]
 
     # "list-actions" is also "list_actions"
     epan list-actions
@@ -31,37 +46,42 @@ Ask the version number to the script itself, calling:
     epan purge-obsoletes [-t|--target dirname]
 
     # "update" is also "add" and "install"
-    epan update [-t|--target dirname] Module1 [Module2...]
+    epan update
+       [-1|-m|--mailrc path]
+       [-2|-o|--output path]
+       [-3|-l|--modlist path]
+       [-t|--target dirname]
+       Module1 [Module2...]
 
 # EXAMPLES
 
-    # collects all what's needed to install Dancer somewhere
-    shell$ epan create -t dancer-stuff Dancer
+    # collects all what's needed to install Template::Perlish somewhere
+    shell$ epan create -t mymodules Template::Perlish
 
     # regenerate index in ./modules/02packages.details.txt.gz
-    shell$ epan idx -t dancer-stuff
+    shell$ epan idx -t mymodules
 
     # prints index on standard output, works on /path/to/minicpan
-    shell$ epan idx -o - -t /path/to/minicpan
+    shell$ epan index -o - -t /path/to/minicpan
 
 # DESCRIPTION
 
 This program helps you creating and managing an EPAN - a version of the
 CPAN that is trimmed down to your needs for installing specific stuff.
 
-To start with an example, suppose you have to install Dancer and a couple
-of its plugins in a machine that - for good reasons - is not connected to
-the Internet. It's easy to get the distribution files for Dancer and the
-plugins... but what about the dependencies? It can easily become
-a nightmare, forcing you to go back and forth with new modules as soon as
-you discover the need to install them.
+To start with an example, suppose you have to install Mojolicious and
+a couple of its plugins in a machine that - for good reasons - is not
+connected to the Internet. It's easy to get the distribution files for
+Dancer and the plugins... but what about the dependencies? It can easily
+become a nightmare, forcing you to go back and forth with new modules as
+soon as you discover the need to install them.
 
 Thanks to [cpanm](https://metacpan.org/pod/cpanm), this is quite easier these days: it can actually do
 what's needed with a single command:
 
     # on the machine connected to the Internet or to a minicpan
     $ cpanm -L xxx --scandeps --save-dists dists \
-         Dancer Dancer::Plugin::FlashNote ...
+         Mojolicious Mojolicious::Plugin::Authentication IO::Socket::SSL ...
 
 which places all the modules in subdirectory `dists` (thanks to option
 `--save-dists`) with an arrangement similar to what you would expect from
@@ -79,7 +99,8 @@ you with a subdirectory that is ready for deployment, with all the bits in
 place to push automation as much as possible. So you can do this:
 
     # on the machine connected to the Internet or to a minicpan
-    $ epan create Dancer Dancer::Plugin::FlashNote ...
+    $ epan create Mojolicious Mojolicious::Plugin::Authentication \
+        IO::Socket::SSL ...
     $ tar cvzf epan.tar.gz epan
 
 transfer `dists.tar.gz` to the target machine and...
@@ -147,9 +168,20 @@ application, you can do like this:
     $ epan index -t dists
     $ tar cvf dists.tar dists
 
-then carry dists.tar with you, at which point you can:
+Well, put like this the second and third lines can just be synthesized as:
+
+    $ epan add -t dists $(<modlist)
+
+but you get the idea. The directory with the modules might be the
+byproduct of invoking `carton` instead (in which case you would end up
+with a sub-directory `cache`).
+
+Anyway, you can then carry dists.tar with you, at which point you can:
 
     $ cpanm --mirror file://$YOURPATH --mirror-only Mod1 Mod2 ...
+
+This command expects the target directory to exist and will complain
+otherwise.
 
 ## `inject`
 
@@ -160,6 +192,9 @@ syntax is straightforward:
     epan inject \ 
        [-a|--author author-name] \
        [-t|--target dirname] File1 [File2...]
+
+As for many other commands, you can also set the different output
+filenames, but that would be hardly useful.
 
 ## `list-actions` and `list_actions`
 
@@ -190,8 +225,8 @@ version `0.3`.
 
     epan purge-obsoletes [-t|--target dirname]
 
-Remove (purge) obsolete distribution packages from the EPAN. See above for what
-_obsolete_ means.
+Remove (purge) obsolete distribution packages from the EPAN. See above for
+what _obsolete_ means.
 
 # OPTIONS
 
@@ -201,27 +236,30 @@ all:
 - -1 | -m | --mailrc
 
     path to the file `01mailrc.txt.gz`, defaults to
-    `authors/01mailrc.txt.gz` inside the target directory
+    `authors/01mailrc.txt.gz` inside the target directory. You hardly want to
+    change this.
 
 - -2 | -o | --output | --package-details
 
     path to the file for `02packages.details.txt.gz`, defaults to
     `modules/02packages.details.txt.gz` inside the target directory. Yes, you
-    can use `-` with the _usual_ meaning.
+    can use `-` with the _usual_ meaning, although this might not help you
+    much.
 
 - -3 | -l | --modlist | --modlist-data
 
     path to the file `03modlist.data.gz`, defaults to
-    `modules/03modlist.data.gz` inside the target directory.
+    `modules/03modlist.data.gz` inside the target directory. You hardly want
+    to change this.
 
 - -a | --author author-name
 
-    module author to use when doing injection of local distribution packages
+    module author to use when doing injection of local distribution packages.
 
 - --help
 
-    print a somewhat more verbose help, showing usage, this description of
-    the options and some examples from the synopsis.
+    print a somewhat more verbose help, showing usage, this description of the
+    options and some examples.
 
 - --man
 
@@ -231,7 +269,13 @@ all:
 
     set the directory of the root for the EPAN to work on. Defaults to the
     sub-directory `epan` in the current directory. This option applies to all
-    commands except `list-actions` and `index`.
+    commands except `list-actions`.
+
+    The default value is `epan` as a sub-directory in the current directory.
+
+    Some commands demand that the target directory already exists; in case it
+    does not, they will complain that you're probably using this option in the
+    wrong way (or not using it at all).
 
 - --usage
 
