@@ -36,7 +36,7 @@ Ask the version number to the script itself, calling:
 
    epan [--usage] [--help] [--man] [--version]
 
-   # "create" insists on *not* finding dirname and creating it
+   # "create" demands that dirname is not present, to create it
    epan create
       [-1|-m|--mailrc path]
       [-2|-o|--output path]
@@ -44,14 +44,14 @@ Ask the version number to the script itself, calling:
       [-t|--target dirname]
       Module1 [Module2...]
 
-   # "index" indexes directories from Carton too
+   # "index" is also "idx"
    epan index
       [-1|-m|--mailrc path]
       [-2|-o|--output path]
       [-3|-l|--modlist path]
       [-t|--target dirname]
 
-   # "inject" adds local distribution archives
+   # "inject" adds local distribution archives available as files
    epan inject
       [-1|-m|--mailrc path]
       [-2|-o|--output path]
