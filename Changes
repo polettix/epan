@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+0.002  2021-06-19 11:26:27 CEST
+   - some refactoring
+   - documentation fixes
+
 0.001002  2021-06-14 15:47:32 CEST
    - use hint about ignoring CPAN::Modulelist via CPAN::Meta stuff
 
