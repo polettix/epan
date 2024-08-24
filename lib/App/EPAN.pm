@@ -13,7 +13,7 @@ use Path::Class qw< file dir >;
 use Cwd qw< cwd >;
 use File::Find::Rule ();
 use Compress::Zlib   ();
-use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 use Moo;
 use IPC::Run   ();
 use File::Copy ();
@@ -33,6 +33,7 @@ sub run {
    my $package = shift;
    my $self    = $package->new();
    $self->get_options(@_);
+   LOGLEVEL(uc($self->config('loglevel') // 'INFO'));
 
    my $action = $self->action();
    pod2usage(-verbose => 99, -sections => 'USAGE') unless defined $action;
@@ -60,6 +61,7 @@ sub get_options {
    GetOptions(
       \%config,
       qw(
+        loglevel|log=s
         mailrc|m|1=s
         output|packages-details|o|2=s
         modlist|modlist-data|l|3=s
