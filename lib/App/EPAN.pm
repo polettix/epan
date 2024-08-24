@@ -380,20 +380,42 @@ sub action_update {
    my $file = $target->file('install.sh');
    if (!-e $file) {
       $self->_save2($file, <<'END_OF_INSTALL');
-#!/bin/bash
-ME=$(readlink -f "$0")
-MYDIR=$(dirname "$ME")
+#!/bin/sh
+md="$(dirname "$(readlink -f "$0")")"
+target="${EPAN_TARGET:-"$md/local"}"
+modlist="${EPAN_MODLIST:-""}"
 
-TARGET="$MYDIR/local"
-[ $# -gt 0 ] && TARGET=$1
+: ${PERL_CPANM_OPT:="--notest --quiet"}
+export PERL_CPANM_OPT
 
-if [ -n "$TARGET" ]; then
-   "$MYDIR/cpanm" --mirror "file://$MYDIR" --mirror-only \
-      -L "$TARGET" \
-      $(<"$MYDIR/modlist.txt")
+if [ $# -gt 0 ] ; then
+   target="$1"
+   shift
+fi
+
+if [ $# -gt 0 ] ; then
+   modlist="$1"
+   shift
 else
-   "$MYDIR/cpanm" --mirror "file://$MYDIR" --mirror-only \
-      $(<"$MYDIR/modlist.txt")
+   for name in 'modlist-sorted.txt' 'modlist.txt' ; do
+      path="$md/$name"
+      [ -r "$path" ] || continue
+      modlist="$path"
+      break
+   done
+fi
+
+call_cpanm() {
+   "$md/cpanm" \
+      --mirror "file://$md" --mirror-only \
+      "$@" \
+      $(cat "$modlist")
+}
+
+if [ -n "$target" ]; then
+   call_cpanm -L "$target"
+else
+   call_cpanm
 fi
 END_OF_INSTALL
       chmod 0777 & ~umask(), $file->stringify();
