@@ -1,4 +1,6 @@
 requires 'perl', '5.012';
+requires 'App::Easer', '>= 2.007003',
+   url => 'https://cpan.metacpan.org/authors/id/P/PO/POLETTIX/App-Easer-2.007003-TRIAL.tar.gz';
 requires 'Dist::Metadata';
 requires 'Path::Class';
 requires 'File::Find::Rule';
@@ -10,6 +12,7 @@ requires 'File::Which';
 requires 'autodie';
 requires 'Moo';
 requires 'Module::ScanDeps';
+requires 'namespace::autoclean';
 
 on develop => sub {
    requires 'Path::Tiny',          '0.084';
